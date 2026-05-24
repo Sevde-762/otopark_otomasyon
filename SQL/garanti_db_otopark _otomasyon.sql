@@ -1,5 +1,5 @@
 CREATE DATABASE  IF NOT EXISTS `mydb` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `mydb`;
+USE `garanti_db_otopark_otomasyon`;
 -- MySQL dump 10.13  Distrib 8.0.11, for Win64 (x86_64)
 --
 -- Host: localhost    Database: mydb
@@ -198,3 +198,70 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-05-24 12:58:23
+-- ========================================================
+-- SAMET HOCANIN İSTEDİĞİ EK YAPILAR (INDEX, VIEW, TRIGGER, PROCEDURE)
+-- ========================================================
+
+-- 1. İNDEKS YAPILARI
+CREATE INDEX idx_arac_plaka ON araclar(plaka);
+CREATE INDEX idx_musteri_telefon ON musteriler(telefon);
+
+-- 2. VIEW YAPILARI
+CREATE VIEW view_otopark_durumu AS
+SELECT alan_adi AS 'Park Alani', kapasite AS 'Toplam Kapasite', bos_kapasite AS 'Bos Yer'
+FROM parkalanlari;
+
+CREATE VIEW view_musteri_arac_listesi AS
+SELECT m.musteri_adi AS 'Ad', m.musteri_soyadi AS 'Soyad', a.plaka AS 'Plaka', a.arac_turu AS 'Arac Turu'
+FROM musteriler m
+INNER JOIN araclar a ON m.musteri_id = a.musteri_id;
+
+-- 3. TRIGGER YAPILARI
+DELIMITER //
+CREATE TRIGGER trg_arac_giris_sonrasi_kapasite_azalt
+AFTER INSERT ON giris_cikislar
+FOR EACH ROW
+BEGIN
+    UPDATE parkalanlari 
+    SET bos_kapasite = bos_kapasite - 1 
+    WHERE alan_id = NEW.alan_id;
+END//
+DELIMITER;
+
+DELIMITER //
+CREATE TRIGGER trg_arac_cikis_sonrasi_kapasite_artir
+AFTER UPDATE ON giris_cikislar
+FOR EACH ROW
+BEGIN
+    IF NEW.durum = 'Tamamlandi' AND OLD.durum != 'Tamamlandi' THEN
+        UPDATE parkalanlari 
+        SET bos_kapasite = bos_kapasite + 1 
+        WHERE alan_id = NEW.alan_id;
+    END IF;
+END//
+DELIMITER;
+
+-- 4. STORED PROCEDURE YAPILARI
+DELIMITER //
+CREATE PROCEDURE sp_musteri_ekle(
+    IN p_adi VARCHAR(45),
+    IN p_soyadi VARCHAR(45),
+    IN p_telefon VARCHAR(15),
+    IN p_eposta VARCHAR(100)
+)
+BEGIN
+    INSERT INTO musteriler(musteri_adi, musteri_soyadi, telefon, eposta) 
+    VALUES (p_adi, p_soyadi, p_telefon, p_eposta);
+END//
+DELIMITER;
+
+DELIMITER //
+CREATE PROCEDURE sp_odeme_al(
+    IN p_tutar DECIMAL(10,2),
+    IN p_islem_id INT
+)
+BEGIN
+    INSERT INTO odemeler(tutar, odeme_tarihi, islem_id) 
+    VALUES (p_tutar, NOW(), p_islem_id);
+END//
+DELIMITER;
