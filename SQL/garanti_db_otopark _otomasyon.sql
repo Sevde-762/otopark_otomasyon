@@ -1,4 +1,4 @@
-CREATE DATABASE  IF NOT EXISTS `mydb` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE DATABASE  IF NOT EXISTS `garanti_db_otopark_otomasyon` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */;
 USE `garanti_db_otopark_otomasyon`;
 -- MySQL dump 10.13  Distrib 8.0.11, for Win64 (x86_64)
 --
