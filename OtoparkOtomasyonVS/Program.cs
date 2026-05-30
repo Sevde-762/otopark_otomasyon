@@ -15,8 +15,8 @@ namespace OtoparkBackend
             while (devamEt)
             {
                 Console.Clear();
-                Console.WriteLine("========================================");
-                Console.WriteLine("   GARANTİ OTOPARK YÖNETİM SİSTEMİ");
+                Console.WriteLine("========================================"); // giriş ekranı tasarımı
+                Console.WriteLine("   OTOPARK OTOMASYON SİSTEMİ   ");
                 Console.WriteLine("========================================");
                 Console.WriteLine("[1] Musteri Kayit");
                 Console.WriteLine("[2] Arac Kayit (Plaka Kontrollü)");
@@ -27,7 +27,7 @@ namespace OtoparkBackend
                 Console.WriteLine("[7] Plakaya Gore Gecmis Sorgula");
                 Console.WriteLine("[0] Cikis");
                 Console.WriteLine("========================================");
-                Console.Write("Seciminiz: ");
+                Console.Write("Seçiminiz: ");
                 string secim = Console.ReadLine();
 
                 switch (secim)
@@ -41,21 +41,21 @@ namespace OtoparkBackend
                     case "7": PlakaSorgula(); break;
                     case "0":
                         devamEt = false;
-                        Console.WriteLine("Cikiliyor... Iyi gunler!");
+                        Console.WriteLine("Çıkış yapılıyor... İYİ GÜNLER DİLERİZ");
                         break;
                     default:
-                        Console.WriteLine("Gecersiz secim!");
+                        Console.WriteLine("Geçersiz seçim! Lütfen tekrar deneyiniz.");
                         Bekle();
                         break;
                 }
             }
         }
 
-        // [1] musteri kayit - sp_musteri_ekle stored procedure kullaniyoruz
+        // 1 numara seçilirse müşteri kaydı yapılır 
         static void MusteriKayit()
         {
             Console.Clear();
-            Console.WriteLine("--- [1] MUSTERI KAYIT ---");
+            Console.WriteLine("--- [1] MÜŞERİ KAYIT ---");
 
             Console.Write("Ad: ");
             string ad = Console.ReadLine();
@@ -69,46 +69,46 @@ namespace OtoparkBackend
             Console.Write("Eposta: ");
             string eposta = Console.ReadLine();
 
-            if (string.IsNullOrEmpty(ad) || string.IsNullOrEmpty(soyad) || string.IsNullOrEmpty(telefon))
+            if (string.IsNullOrEmpty(ad) || string.IsNullOrEmpty(soyad) || string.IsNullOrEmpty(telefon)) // degerlerin bos olup olmadigini kontrol ediyoruz
             {
                 Console.WriteLine("[HATA] Ad soyad ve telefon bos birakilamaz!");
                 Bekle();
                 return;
             }
 
-            using (MySqlConnection con = new MySqlConnection(connectionString))
+            using (MySqlConnection con = new MySqlConnection(connectionString)) // veritabanina baglanmak icin using blogu kullanarak otomatik olarak baglantiyi kapatmasini sagliyoruz(using blogu ile)
             {
-                try
+                try //bu kod bloğu için yapay zekadan yardım alınmıştır.
                 {
                     con.Open();
 
-                    // ayni telefon daha once kayitli mi kontrol ediyoruz
-                    string kontrol = "SELECT musteri_id FROM musteriler WHERE telefon = @telefon LIMIT 1";
-                    using (MySqlCommand cmd = new MySqlCommand(kontrol, con))
+                    // Aynı telefn daha önce kayıtlı mı diye kontrol ediyoruz
+                    string kontrol = "SELECT musteri_id FROM musteriler WHERE telefon = @telefon LIMIT 1"; // SQL sorgusu ile telefon numarasının daha önce kayıtlı olup olmadığını kontrol ediyoruz. LIMIT 1 ifadesi, sadece ilk eşleşmeyi döndürür 
+                    using (MySqlCommand cmd = new MySqlCommand(kontrol, con)) //kontrol sorgusunu çalıştırmak için MySqlCommand nesnesi oluşturuyoruz ve bağlantıyı sağlıyoruz
                     {
                         cmd.Parameters.AddWithValue("@telefon", telefon);
-                        if (cmd.ExecuteScalar() != null)
+                        if (cmd.ExecuteScalar() != null) // ExecuteScalar() metodu, sorgudan dönen ilk değeri alır. Eğer telefon numarası zaten kayıtlıysa, null olmayan bir değer dönecektir. Bu durumda kullanıcıya uyarı mesajı gösterilir ve kayıt işlemi engellenir.
                         {
-                            Console.WriteLine("[UYARI] Bu telefon numarasi zaten kayitli! Mukerrer kayit engellendi.");
+                            Console.WriteLine("[UYARI] Bu telefon numarası zaten kayıtlı! Kayıt engellendi.");
                             Bekle();
                             return;
                         }
                     }
 
-                    // sp_musteri_ekle stored procedure cagiriyoruz
+                    // Müşteri Ekleme işlemi için stored procedure kullanıyoruz. sp_musteri_ekle prosedürü, müşteri bilgilerini alır ve veritabanına ekler
                     using (MySqlCommand cmd = new MySqlCommand("sp_musteri_ekle", con))
                     {
-                        cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                        cmd.CommandType = System.Data.CommandType.StoredProcedure; // komut türünü stored procedure olarak belirtiyoruz sql çağrısı olarak değil 
                         cmd.Parameters.AddWithValue("p_adi", ad);
                         cmd.Parameters.AddWithValue("p_soyadi", soyad);
                         cmd.Parameters.AddWithValue("p_telefon", telefon);
                         cmd.Parameters.AddWithValue("p_eposta", eposta);
-                        cmd.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery(); // SQL kodunu direkt yazmak yerine veritabanındaki hazır prodedure'ü çağırarak müşteri ekleme işlemini gerçekleştiriyoruz. 
                     }
 
                     Console.WriteLine("[BASARILI] Musteri basariyla kaydedildi!");
                 }
-                catch (Exception ex)
+                catch (Exception ex) // try bloğu içinde hata olursa burası devreye giriyor 
                 {
                     Console.WriteLine("[HATA]: " + ex.Message);
                 }
@@ -116,24 +116,24 @@ namespace OtoparkBackend
             Bekle();
         }
 
-        // [2] arac kayit - plaka mukerrer kontrolu var
+        // 2 numara seçilirse araç kaydı yapılır. Plaka kontrolü yapılır, müşteri ID'si doğrulanır ve araç kaydedilir. Plaka zaten kayıtlıysa uyarı verilir ve kayıt engellenir.
         static void AracKayit()
         {
             Console.Clear();
             Console.WriteLine("--- [2] ARAC KAYIT ---");
 
             Console.Write("Plaka: ");
-            string plaka = Console.ReadLine().Trim().ToUpper();
+            string plaka = Console.ReadLine().Trim().ToUpper(); // kullanıcı boşluk bırakıp küçük harf girse bile palaka formatı haline getirilip sıkıntı çıkmması için
 
-            Console.Write("Arac Turu (Sedan, SUV vb): ");
+            Console.Write("Ara. Türünü giriniz: ");
             string aracTuru = Console.ReadLine();
 
             Console.Write("Musteri ID: ");
             string musteriIdStr = Console.ReadLine();
 
-            if (!int.TryParse(musteriIdStr, out int musteriId))
+            if (!int.TryParse(musteriIdStr, out int musteriId)) //Tryparse ile integer dönüştürüldü
             {
-                Console.WriteLine("[HATA] Gecerli bir Musteri ID giriniz!");
+                Console.WriteLine("[HATA] Geçerli bir müşteri ID giriniz!");
                 Bekle();
                 return;
             }
@@ -144,40 +144,40 @@ namespace OtoparkBackend
                 {
                     con.Open();
 
-                    // musteri var mi
+                    // müşteri var mı
                     string musteriKontrol = "SELECT musteri_id FROM musteriler WHERE musteri_id = @id LIMIT 1";
                     using (MySqlCommand cmd = new MySqlCommand(musteriKontrol, con))
                     {
                         cmd.Parameters.AddWithValue("@id", musteriId);
-                        if (cmd.ExecuteScalar() == null)
+                        if (cmd.ExecuteScalar() == null) // Sql'i çalıştırıp tek sonuç döndürür
                         {
-                            Console.WriteLine("[HATA] Bu ID'li musteri bulunamadi!");
+                            Console.WriteLine("[HATA] Bu ID'li müşteri bulunamadı!");
                             Bekle();
                             return;
                         }
                     }
 
-                    // plaka mukerrer kontrolu - idx_arac_plaka indexi burada devreye girer
+                    // Plaka kontrolü - aynı plaka ile ikinci araç kaydı engelleniyor
                     string plakaKontrol = "SELECT araclar_id FROM araclar WHERE plaka = @plaka LIMIT 1";
                     using (MySqlCommand cmd = new MySqlCommand(plakaKontrol, con))
                     {
                         cmd.Parameters.AddWithValue("@plaka", plaka);
                         if (cmd.ExecuteScalar() != null)
                         {
-                            Console.WriteLine("[ENGELLENDİ] Bu plaka zaten kayitli! Mukerrer arac kaydı yapilamaz.");
+                            Console.WriteLine("[ENGELLENDİ] Bu plaka zaten kayıtlı! İkinci araç kaydı engellendi.");
                             Bekle();
                             return;
                         }
                     }
 
-                    // araci tabloya ekle
+                    // aracı veritabanına ekleme
                     string ekle = "INSERT INTO araclar (plaka, arac_turu, musteri_id) VALUES (@plaka, @tur, @musteriId); SELECT LAST_INSERT_ID();";
                     using (MySqlCommand cmd = new MySqlCommand(ekle, con))
                     {
                         cmd.Parameters.AddWithValue("@plaka", plaka);
                         cmd.Parameters.AddWithValue("@tur", aracTuru);
                         cmd.Parameters.AddWithValue("@musteriId", musteriId);
-                        int yeniId = Convert.ToInt32(cmd.ExecuteScalar());
+                        int yeniId = Convert.ToInt32(cmd.ExecuteScalar()); // ExecuteScalar() ile eklenen aracın ID'sini alıyoruz. LAST_INSERT_ID() fonksiyonu, son eklenen kaydın ID'sini döndürür. Bu sayede yeni aracın ID'sini öğrenip kullanıcıya gösterebiliyoruz.
                         Console.WriteLine($"[BASARILI] Arac kaydedildi! Arac ID: {yeniId}");
                     }
                 }
@@ -193,7 +193,7 @@ namespace OtoparkBackend
         static void AracGiris()
         {
             Console.Clear();
-            Console.WriteLine("--- [3] ARAC GIRIS ---");
+            Console.WriteLine("--- [3] ARAÇ GİRİŞİ ---");
 
             Console.Write("Plaka: ");
             string plaka = Console.ReadLine().Trim().ToUpper();
@@ -239,13 +239,13 @@ namespace OtoparkBackend
                     string alanSorgu = "SELECT alan_id, alan_adi, bos_kapasite FROM parkalanlari WHERE bos_kapasite > 0";
                     using (MySqlCommand cmd = new MySqlCommand(alanSorgu, con))
                     {
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        using (MySqlDataReader reader = cmd.ExecuteReader()) //SQL'den gelen kodu satır satır okumaya yarıyor
                         {
                             bool bosAlanVar = false;
                             while (reader.Read())
                             {
                                 bosAlanVar = true;
-                                Console.WriteLine($"  ID: {reader["alan_id"]}  Adi: {reader["alan_adi"]}  Bos: {reader["bos_kapasite"]}");
+                                Console.WriteLine($"  ID: {reader["alan_id"]}  Adi: {reader["alan_adi"]}  Bos: {reader["bos_kapasite"]}"); // içlerimdeki konutları yazdırıyor
                             }
                             if (!bosAlanVar)
                             {
@@ -257,11 +257,10 @@ namespace OtoparkBackend
                     }
 
                     Console.Write("Alan ID Seciniz: ");
-                    int alanId = Convert.ToInt32(Console.ReadLine());
+                    int alanId = Convert.ToInt32(Console.ReadLine()); // String'den integer dönüşümü yaptık
 
                     // giris kaydi olustur
-                    // NOT: bu INSERT sonrasi trg_arac_giris_sonrasi_kapasite_azalt triggeri otomatik calisir
-                    DateTime girisZamani = DateTime.Now;
+                    DateTime girisZamani = DateTime.Now; //Şu anki tarih ve saati alır 
                     string girisSorgu = "INSERT INTO giris_cikislar (araclar_id, alan_id, giris_zamani, durum) VALUES (@aracId, @alanId, @zaman, 'İçeride')";
                     using (MySqlCommand cmd = new MySqlCommand(girisSorgu, con))
                     {
@@ -285,7 +284,7 @@ namespace OtoparkBackend
         static void AracCikisVeOdeme()
         {
             Console.Clear();
-            Console.WriteLine("--- [4] ARAC CIKIS VE ODEME ---");
+            Console.WriteLine("--- [4] ARAÇ ÇIKIŞI VE ÖDEME ---");
 
             Console.Write("Plaka: ");
             string plaka = Console.ReadLine().Trim().ToUpper();
@@ -324,7 +323,7 @@ namespace OtoparkBackend
                     }
 
                     // sure ve ucret hesapla (25 TL/saat, minimum 1 saat)
-                    DateTime cikisZamani = DateTime.Now;
+                    DateTime cikisZamani = DateTime.Now; // 
                     double saat = Math.Ceiling((cikisZamani - girisZamani).TotalHours);
                     if (saat < 1) saat = 1;
                     decimal tutar = (decimal)saat * 25;
